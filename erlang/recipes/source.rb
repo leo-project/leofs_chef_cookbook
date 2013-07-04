@@ -12,7 +12,7 @@ packages.each do |dev_pkg|
 end
 
 install_path = "#{node['erlang']['prefix_dir']}/bin/erl"
-archive_dir = "#{node['erlang']['url']}"[/(otp.*)\.tar\.gz$/]
+archive_dir = "#{node['erlang']['url']}"[/(otp.*)\.tar\.gz$/, 1]
 
 remote_file "#{Chef::Config[:file_cache_path]}/otp.tar.gz" do
   source "#{node['erlang']['url']}"
@@ -23,9 +23,10 @@ end
 bash "build-and-install-erlang" do
   cwd Chef::Config[:file_cache_path]
   code <<-EOF
-  tar -jxvf otp.tar.gz
+  tar -xvf otp.tar.gz
+  NUM_OF_CPUS=`cat /proc/cpuinfo |grep processor|wc -l`
   (cd #{archive_dir} && ./configure #{configure_options})
-  (cd #{archive_dir} && make && make install)
+  (cd #{archive_dir} && make -j ${NUM_OF_CPUS} && make install)
   EOF
   not_if { ::File.exists?(install_path) }
 end
